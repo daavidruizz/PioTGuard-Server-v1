@@ -4,12 +4,12 @@
 #include "mqtt_client.h"
 #include <string.h>
 
-#define host "127.0.0.1"
+#define host "192.168.1.211"
 #define port 8883
 
-#define caPath "credentials/ca.crt"
-#define certPath "credentials/sensor.crt"
-#define certKeyPath "credentials/sensor.key"
+#define caPath "credentials/mqtt_ca.crt"
+#define certPath "credentials/localhost.crt"
+#define certKeyPath "credentials/localhost.key"
 
 struct mosquitto *mosq = NULL;
 
@@ -22,15 +22,15 @@ static void mqttCallback(struct mosquitto *mosq, void *userdata, const struct mo
 }
 
 static int pw_callback(char *buf, int size, int rwflag, void *userdata) {
-    // Suponiendo que la contraseña está almacenada de alguna manera accesible
-    const char *password = "140516";  // Deberías tener una forma segura de manejar esto
+    const char *password = "140516";  // Idealmente, la contraseña no debería estar codificada directamente aquí.
 
     if (size < strlen(password) + 1) {
         return 0; // El buffer proporcionado no es suficiente
     }
 
-    strcpy(buf, password);  // Copiar la contraseña al buffer proporcionado
-    return strlen(buf);     // Retornar la longitud de la contraseña escrita en el buffer
+    strncpy(buf, password, size);
+    buf[size - 1] = '\0'; // Asegúrate de que el buffer esté terminado en null
+    return strlen(buf);   // Retornar la longitud de la contraseña escrita en el buffer
 }
 
 void mqtt_init(void){
@@ -55,7 +55,8 @@ void mqtt_init(void){
 
     mosquitto_message_callback_set(mosq, mqttCallback);
 
-    mosquitto_subscribe(mosq, NULL, "/info/device/sensors", 2);
+    mosquitto_subscribe(mosq, NULL, DEVICE_SENSORS, 2);
+    mosquitto_subscribe(mosq, NULL, ALARM_TRIGGER, 2);
 }
 
 void mqtt_loop(void){

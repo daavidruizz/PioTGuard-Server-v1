@@ -116,13 +116,8 @@ int main (int argc, char *argv[])
     GstElement *avdec_h264;
     GstElement *videoqueue0;
     GstElement *videoconvert;
-    GstElement *rtppcmadepay;
-    GstElement *alawdec;
-    GstElement *audioqueue0;
-    GstElement *audioconvert;
 
     GstElement *video_sink; /* The video sink element which receives XOverlay commands */
-    GstElement *audio_sink;
 
     /*config struct*/
     struct config rtsp_config;

@@ -72,7 +72,7 @@ gboolean accept_certificate (GstRTSPAuth *auth,
         g_print("errors value %d\n",errors);
 
         //g_object_unref (database);
-        if (error)
+        if (error || errors)
         {
             g_warning ("failure verifying certificate chain: %s",
                        error->message);
@@ -81,13 +81,15 @@ gboolean accept_certificate (GstRTSPAuth *auth,
         }
     }
 
-    if (error == 0) {
+    if (error == 0 || errors == 0) {
         return TRUE;
     }
     return FALSE;
 }
 
 int main(int argc, char *argv[]){
+    
+    g_setenv("G_MESSAGES_DEBUG", "all", TRUE);
     
     // Configurar el manejador de señal 
     if (signal(SIGTERM, handleSignal) == SIG_ERR) {
