@@ -10,7 +10,8 @@
                 "/usr/include/gstreamer-1.0/gst",
                 "/usr/include/gstreamer-1.0",
                 "${workspaceFolder}/include/**",
-                "/usr/include/cjson"
+                "/usr/include/cjson",
+                "/usr/include/"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/gcc",

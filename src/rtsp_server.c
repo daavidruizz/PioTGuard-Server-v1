@@ -190,14 +190,25 @@ int main(int argc, char *argv[]){
                                             ")");
     
     */
+/*
     gst_rtsp_media_factory_set_launch(factory, "( "
                                              "v4l2src device=/dev/video0 ! video/x-h264, width=640, height=480, framerate=30/1 ! "
                                              "h264parse config-interval=1 ! "
                                              "rtph264pay name=pay0 pt=96 "
                                              ")");
+*/ 
+     
+    gst_rtsp_media_factory_set_launch(factory, "( "
+                                             "v4l2src device=/dev/video1 ! video/x-raw,format=I420,width=640,height=480,framerate=30/1 ! "
+                                             "x264enc speed-preset=ultrafast ! h264parse config-interval=1 ! "
+                                             "rtph264pay name=pay0 pt=96 "
+                                             ")");
+
+    
     
 
-//"( v4l2src device=/dev/video0 ! video/x-h264, width=640, height=480, framerate=30/1 ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )"
+//v4l2src device=/dev/video0 ! videoconvert ! videoscale ! video/x-raw,format=I420,width=640,height=480,framerate=30/1 ! v4l2sink device=/dev/video17
+
 
     /* add permissions for the user media role */
     permissions = gst_rtsp_permissions_new ();
