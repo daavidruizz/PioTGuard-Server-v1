@@ -94,7 +94,7 @@ void mariadb_init(){
 void insertRecordName(char *filename, char *sensor){
     MYSQL_STMT *stmt;
     MYSQL_BIND bind[2];
-    char query[] = "INSERT INTO videos (nombre_video, sensor) VALUES (?, ?)";
+    char query[] = "INSERT INTO videos (videoPath, sensor) VALUES (?, ?)";
     
     stmt = mysql_stmt_init(conn);
     if (!stmt) {
@@ -143,28 +143,30 @@ void insertRecordName(char *filename, char *sensor){
     mysql_stmt_close(stmt);
 }
 
-void insertEvent(cJSON *data){
-
-    MYSQL_STMT *stmt;
-    MYSQL_BIND bind[5];
+void insertEvent(cJSON *data, char *videoPath){
+ MYSQL_STMT *stmt;
+    MYSQL_BIND bind[6]; // Aumentamos el tamaño del array a 6
     char query[] = "INSERT INTO "EVENTS_TABLE" \
                     ("EVENTS_TABLE_ENABLED", \
                     "EVENTS_TABLE_SENSOR_NAME", \
                     "EVENTS_TABLE_SENSOR_VALUE", \
                     "EVENTS_TABLE_SENDOR_ID", \
-                    "EVENTS_TABLE_DATE") \
-                    VALUES (?, ?, ?, ?, ?)";
+                    "EVENTS_TABLE_DATE", \
+                    "EVENTS_TABLE_NOMBRE_VIDEO") \
+                    VALUES (?, ?, ?, ?, ?, ?)";
     
     stmt = mysql_stmt_init(conn);
     if (!stmt) {
         fprintf(stderr, "mysql_stmt_init() failed\n");
         cJSON_Delete(data);
+        return; // Aseguramos que la función termina aquí
     }
     
     if (mysql_stmt_prepare(stmt, query, strlen(query))) {
         fprintf(stderr, "mysql_stmt_prepare(), ERROR: %s\n", mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
         cJSON_Delete(data);
+        return; // Aseguramos que la función termina aquí
     }
 
     memset(bind, 0, sizeof(bind));
@@ -175,6 +177,7 @@ void insertEvent(cJSON *data){
     int sensor_value;
     int sensor_id;
     char *time;
+
 
     json_item = cJSON_GetObjectItem(data, "enabled");
     if (json_item != NULL) enabled = json_item->valueint;
@@ -191,9 +194,9 @@ void insertEvent(cJSON *data){
     json_item = cJSON_GetObjectItem(data, "date");
     if (json_item != NULL) time = json_item->valuestring;
     
+
+
     printf("JSON COMPLETADOS\n");
-
-
 
     // Enabled (TINYINT)
     bind[0].buffer_type = MYSQL_TYPE_TINY;
@@ -207,7 +210,7 @@ void insertEvent(cJSON *data){
     
     // Sensor value (INT)
     bind[2].buffer_type = MYSQL_TYPE_LONG;
-    bind[2].buffer = &sensor_value; //INT
+    bind[2].buffer = &sensor_value; // INT
     bind[2].is_null = 0;
     
     // Sensor ID (SMALLINT)
@@ -220,6 +223,11 @@ void insertEvent(cJSON *data){
     bind[4].buffer = time; // 'time' debe ser una cadena de caracteres formateada
     bind[4].buffer_length = strlen(time);
     
+    // Nombre del video (VARCHAR)
+    bind[5].buffer_type = MYSQL_TYPE_STRING;
+    bind[5].buffer = videoPath; // 'videoPath' debe ser una cadena de caracteres
+    bind[5].buffer_length = strlen(videoPath);
+    
     printf("BIND COMPLETADOS\n");
 
     // Enlazar parámetros
@@ -228,6 +236,7 @@ void insertEvent(cJSON *data){
         fprintf(stderr, "%s\n", mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
         cJSON_Delete(data);
+        return; // Aseguramos que la función termina aquí
     }
 
     // Ejecutar la consulta
@@ -237,7 +246,6 @@ void insertEvent(cJSON *data){
         printf("Registro insertado correctamente.\n");
     }
     
-
     // Limpiar
     mysql_stmt_close(stmt);
     cJSON_Delete(data);
@@ -291,8 +299,9 @@ static void mqttCallback(struct mosquitto *mosq, void *userdata, const struct mo
                 record_video(filename, "10");
 
                 printf("Procesando el mensaje:\n");
-                insertEvent(data);
-                insertRecordName(filename, sensorAux);
+                insertEvent(data, filename);
+                
+                //insertRecordName(filename, sensorAux); DEPRECATED
                 
                 last_execution = current_time;
                 printf("CURRENT TIME %f\n",last_execution);

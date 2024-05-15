@@ -11,3 +11,4 @@
 #define EVENTS_TABLE_SENSOR_VALUE   "sensor_value"
 #define EVENTS_TABLE_SENDOR_ID      "sensor_id"
 #define EVENTS_TABLE_DATE           "date"
+#define EVENTS_TABLE_NOMBRE_VIDEO   "nombre_video"
