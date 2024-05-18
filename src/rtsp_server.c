@@ -89,7 +89,7 @@ gboolean accept_certificate (GstRTSPAuth *auth,
 
 int main(int argc, char *argv[]){
     
-    g_setenv("G_MESSAGES_DEBUG", "all", TRUE);
+    //g_setenv("G_MESSAGES_DEBUG", "all", TRUE);
     
     // Configurar el manejador de señal 
     if (signal(SIGTERM, handleSignal) == SIG_ERR) {
@@ -156,7 +156,7 @@ int main(int argc, char *argv[]){
         g_printerr ("failed to parse CA PEM: %s\n", error->message);
         return -1;
     }
-    
+    //G_TLS_AUTHENTICATION_REQUIRED
     gst_rtsp_auth_set_tls_authentication_mode(auth, G_TLS_AUTHENTICATION_REQUIRED);
     gst_rtsp_auth_set_tls_certificate (auth, cert);
     g_signal_connect (auth, "accept-certificate", G_CALLBACK(accept_certificate), ca_cert);

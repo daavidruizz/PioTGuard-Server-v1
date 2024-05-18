@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #define MQTTcaPath "/home/guard/certificates/mqtt/mqtt_ca.crt"
 #define MQTTcertPath "/home/guard/certificates/mqtt/clients/localhost.crt"
@@ -23,8 +24,10 @@
 
 #define db_user_pass "140516"
 
-#define COOLDOWN_PERIOD 180
+#define COOLDOWN_PERIOD 60
+
 static time_t last_execution = 0;
+pid_t streamPID = -1;
 
 struct mosquitto *mosq = NULL;
 MYSQL *conn;
@@ -246,9 +249,7 @@ void insertEvent(cJSON *data, char *videoPath){
         printf("Registro insertado correctamente.\n");
     }
     
-    // Limpiar
     mysql_stmt_close(stmt);
-    cJSON_Delete(data);
 }
 
 //===========================================
@@ -309,6 +310,50 @@ static void mqttCallback(struct mosquitto *mosq, void *userdata, const struct mo
                 printf("Solicitud ignorada, cooldown en progreso.\n");
             }
         }
+        cJSON_Delete(data);
+
+    }else if(strcmp(message->topic, CFG_STREAM) == 0){
+        cJSON *data = cJSON_CreateObject();
+        data = cJSON_Parse((char *)message->payload);
+        
+        if(data != NULL){
+            cJSON *json_item = cJSON_GetObjectItem(data, "value");
+            int value = -1;
+            if (json_item != NULL) value = json_item->valueint;
+            printf("VALUE -> %d\n", value);
+            if(value == 0){
+                if (streamPID > 0) {
+                    printf("Stopping streaming, PID %d\n", streamPID);
+                    kill(streamPID, SIGTERM);
+                    waitpid(streamPID, NULL, 0);
+                    streamPID = -1;
+                } else {
+                    printf("RTSP Service already disabled.\n");
+                }
+            }else if(value == 1){
+                if (streamPID == -1) {
+                    printf("Starting streaming...\n");
+                    streamPID = fork();
+                    if (streamPID == 0) {
+                        printf("Inside child process, attempting to execute the streaming server...\n");
+                        execl("/home/guard/PioTGuard-Server-v1/rtsp_server", NULL, (char *)NULL);
+                        perror("execl failed");
+                        exit(EXIT_FAILURE);  // Ensure child process exits if execl fails
+                    } else if (streamPID > 0) {
+                        // Proceso padre
+                        printf("Streaming process started with PID %d\n", streamPID);
+                    } else {
+                        // Error al hacer fork
+                        perror("fork");
+                    }
+                } else {
+                    printf("Streaming already enabled PID %d\n", streamPID);
+                }
+            }
+        }
+        cJSON_Delete(data);
+    }else{
+        printf("Topic no reconocido: %s \n", message->topic);
     }
 }
 
@@ -347,6 +392,7 @@ void mqtt_init(void){
     mosquitto_message_callback_set(mosq, mqttCallback);
 
     mosquitto_subscribe(mosq, NULL, ALARM_TRIGGER, 2);
+    mosquitto_subscribe(mosq, NULL, CFG_STREAM, 2);
 }
 
 void mqtt_loop(void){

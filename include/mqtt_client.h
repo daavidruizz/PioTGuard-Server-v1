@@ -10,6 +10,7 @@
 #define ALARM_TRIGGER           "/info/alarm"
 
 #define CFG_ALARM               "/config/alarm"
+#define CFG_STREAM              "/config/stream"
 #define CFG_DOOR                "/config/sensor/door"
 #define CFG_GAS                 "/config/sensor/gas"
 #define CFG_PRESENCE            "/config/sensor/presence"
